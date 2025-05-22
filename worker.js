@@ -7,98 +7,97 @@ import { v2 as cloudinary } from 'cloudinary';
 
 // Cloudinary 配置将在 handleRequest 中从 env 获取
 
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request, event.env));
-});
+export default {
+  /**
+   * Cloudflare Worker 的入口函数，处理所有传入的 HTTP 请求。
+   * @param {Request} request - 传入的 Request 对象。
+   * @param {object} env - Worker 的环境变量对象，包含 Cloudinary 凭据和密码。
+   * @param {ExecutionContext} ctx - Worker 的执行上下文，用于管理生命周期。
+   * @returns {Response} - 返回的 Response 对象。
+   */
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const method = request.method;
 
-/**
- * 处理传入的 HTTP 请求，根据路径和方法分发到不同的处理函数，并包含密码验证逻辑
- * @param {Request} request - 传入的 Request 对象
- * @param {object} env - Worker 的环境变量对象，包含 Cloudinary 凭据和密码
- * @returns {Response} - 返回的 Response 对象
- */
-async function handleRequest(request, env) {
-  const url = new URL(request.url);
-  const path = url.pathname;
-  const method = request.method;
-
-  try {
-    // 从环境变量中获取密码
-    const CORRECT_PASSWORD = env.AUTH_PASSWORD;
-    if (!CORRECT_PASSWORD) {
-      // 如果未设置密码，则直接处理请求（或者返回错误，取决于期望行为）
-      console.warn('AUTH_PASSWORD is not set in Worker environment. Access will not be protected.');
-      return handleAuthenticatedRequest(request, env, path, method);
-    }
-
-    // 检查是否已登录（Cookie验证）
-    const cookies = request.headers.get('Cookie')?.split('; ') || [];
-    let passwordValue = null;
-    for (const cookie of cookies) {
-      const [name, ...rest] = cookie.split('=');
-      if (name === 'password') {
-        passwordValue = decodeURIComponent(rest.join('='));
-        break;
-      }
-    }
-
-    // 处理POST请求（密码提交）
-    if (method === 'POST' && path === '/') { // 假设密码提交到根路径
-      const ct = request.headers.get('Content-Type') || '';
-      if (!ct.includes('application/x-www-form-urlencoded')) {
-        return new Response('Unsupported Content-Type', { status: 400 });
+    try {
+      // 从环境变量中获取密码
+      const CORRECT_PASSWORD = env.AUTH_PASSWORD;
+      if (!CORRECT_PASSWORD) {
+        // 如果未设置密码，则直接处理请求（或者返回错误，取决于期望行为）
+        console.warn('AUTH_PASSWORD is not set in Worker environment. Access will not be protected.');
+        return handleAuthenticatedRequest(request, env, path, method);
       }
 
-      let formData;
-      try {
-        formData = await request.formData();
-      } catch (error) {
-        return new Response('Invalid form data', { status: 400 });
+      // 检查是否已登录（Cookie验证）
+      const cookies = request.headers.get('Cookie')?.split('; ') || [];
+      let passwordValue = null;
+      for (const cookie of cookies) {
+        const [name, ...rest] = cookie.split('=');
+        if (name === 'password') {
+          passwordValue = decodeURIComponent(rest.join('='));
+          break;
+        }
       }
 
-      const entered = formData.get('password');
-      if (entered === CORRECT_PASSWORD) {
-        // 密码正确：设置Cookie并重定向到根路径
-        const encodedPassword = encodeURIComponent(CORRECT_PASSWORD);
-        const headers = new Headers({
-          'Location': '/', // 重定向到首页
-          'Set-Cookie': `password=${encodedPassword}; Path=/; HttpOnly; Secure; SameSite=Strict`
+      // 处理POST请求（密码提交）
+      if (method === 'POST' && path === '/') { // 假设密码提交到根路径
+        const ct = request.headers.get('Content-Type') || '';
+        if (!ct.includes('application/x-www-form-urlencoded')) {
+          return new Response('Unsupported Content-Type', { status: 400 });
+        }
+
+        let formData;
+        try {
+          formData = await request.formData();
+        } catch (error) {
+          return new Response('Invalid form data', { status: 400 });
+        }
+
+        const entered = formData.get('password');
+        if (entered === CORRECT_PASSWORD) {
+          // 密码正确：设置Cookie并重定向到根路径
+          const encodedPassword = encodeURIComponent(CORRECT_PASSWORD);
+          const headers = new Headers({
+            'Location': '/', // 重定向到首页
+            'Set-Cookie': `password=${encodedPassword}; Path=/; HttpOnly; Secure; SameSite=Strict`
+          });
+          return new Response(null, { status: 302, headers });
+        } else {
+          // 密码错误：显示登录页
+          return new Response(generateLoginPage('密码错误，请重试。'), {
+            status: 401,
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
+        }
+      }
+
+      // 非POST请求：检查Cookie是否有效
+      if (passwordValue === CORRECT_PASSWORD) {
+        // 已登录：允许访问原始请求
+        // 配置 Cloudinary SDK (在认证通过后配置)
+        cloudinary.config({
+          cloud_name: env.CLOUDINARY_CLOUD_NAME,
+          api_key: env.CLOUDINARY_API_KEY,
+          api_secret: env.CLOUDINARY_API_SECRET
         });
-        return new Response(null, { status: 302, headers });
+        return handleAuthenticatedRequest(request, env, path, method);
       } else {
-        // 密码错误：显示登录页
-        return new Response(generateLoginPage('密码错误，请重试。'), {
+        // 未登录：强制返回登录页
+        return new Response(generateLoginPage(), {
           status: 401,
           headers: { 'Content-Type': 'text/html; charset=utf-8' }
         });
       }
-    }
-
-    // 非POST请求：检查Cookie是否有效
-    if (passwordValue === CORRECT_PASSWORD) {
-      // 已登录：允许访问原始请求
-      // 配置 Cloudinary SDK (在认证通过后配置)
-      cloudinary.config({
-        cloud_name: env.CLOUDINARY_CLOUD_NAME,
-        api_key: env.CLOUDINARY_API_KEY,
-        api_secret: env.CLOUDINARY_API_SECRET
-      });
-      return handleAuthenticatedRequest(request, env, path, method);
-    } else {
-      // 未登录：强制返回登录页
-      return new Response(generateLoginPage(), {
-        status: 401,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    } catch (error) {
+      console.error('Worker Request Handling Error:', error);
+      return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 500
       });
     }
-  } catch (error) {
-    console.error('Worker Request Handling Error:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 500
-    });
   }
-}
+};
 
 /**
  * 处理已认证的请求，分发到不同的 API 处理函数或服务静态文件
@@ -164,8 +163,9 @@ async function handleUpload(request) {
     const folder = formData.get('folder');
     const tags = formData.get('tags');
 
-    if (!file) {
-      return new Response(JSON.stringify({ error: 'No file uploaded.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    // 检查 file 是否为 File 对象
+    if (!file || !(file instanceof File)) {
+      return new Response(JSON.stringify({ error: 'No valid file uploaded.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // 将文件数据转换为 Base64

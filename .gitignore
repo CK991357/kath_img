@@ -8,3 +8,6 @@ cases/
 docs/
 Guide/
 memory-bank/
+node/
+package.json
+package-lock.json
