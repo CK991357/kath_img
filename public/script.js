@@ -78,14 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
         dprAutoToggle.checked = false;
 
         currentTransformations = {}; // 清空所有转换
-        // 只有当 originalImageUrl 存在时才设置 transformedImage.src
-        if (originalImageUrl) {
-            transformedImage.src = originalImageUrl; // 显示原图
-            transformedImage.classList.remove('hidden');
-        } else {
-            transformedImage.src = ''; // 清空图片源
-            transformedImage.classList.add('hidden'); // 隐藏图片
-        }
+        transformedImage.src = originalImageUrl; // 显示原图
+        transformedImage.classList.remove('hidden');
     }
 
     /**
@@ -208,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function applyTransformations(publicId, transformations) {
         if (!publicId) {
-            // 如果没有选中图片，则静默返回，不进行转换操作 (程序化触发时使用)
+            alert('请先从画廊中选择一张图片进行编辑。');
             return;
         }
 
