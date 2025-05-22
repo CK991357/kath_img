@@ -1,0 +1,356 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+h1, h2 {
+    color: #0056b3;
+}
+
+section {
+    background-color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+form {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="file"],
+input[type="text"],
+button {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#uploadResult {
+    margin-top: 15px;
+    padding: 10px;
+    border-top: 1px solid #eee;
+}
+
+#uploadResult img {
+    display: block;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    padding: 5px;
+    background-color: #fff;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.image-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.image-gallery img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.image-gallery img:hover {
+    transform: scale(1.03);
+    border-color: #007bff;
+}
+
+.image-editor {
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.image-preview {
+    text-align: center;
+    flex: 1;
+}
+
+.image-preview img {
+    max-width: 100%;
+    height: auto;
+    max-height: 300px; /* 限制图片最大高度 */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 10px;
+    object-fit: contain; /* 确保图片完整显示 */
+}
+
+.image-preview .hidden {
+    display: none;
+}
+
+.image-detail-viewer {
+    text-align: center;
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.image-detail-viewer img {
+    max-width: 100%;
+    height: auto;
+    max-height: 400px; /* 限制详情图片最大高度 */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 10px;
+    object-fit: contain;
+}
+
+.image-detail-viewer .hidden {
+    display: none;
+}
+
+.image-detail-viewer p {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #555;
+}
+
+.controls {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap; /* 允许按钮换行 */
+    gap: 10px;
+    align-items: center;
+}
+
+.controls h3 {
+    width: 100%; /* 标题占据整行 */
+    margin-bottom: 5px;
+    color: #0056b3;
+}
+
+.effect-button {
+    background-color: #6c757d; /* 默认灰色 */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.effect-button:hover {
+    background-color: #5a6268;
+}
+
+.effect-button.active {
+    background-color: #28a745; /* 选中状态绿色 */
+}
+
+/* 新增的样式 */
+.effect-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 5px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+}
+
+.effect-group label {
+    margin-bottom: 0; /* 覆盖默认的 label 样式 */
+    font-weight: normal;
+    white-space: nowrap; /* 防止标签换行 */
+}
+
+.effect-group input[type="text"],
+.effect-group input[type="number"],
+.effect-group select.effect-select {
+    flex-grow: 1; /* 允许输入框和选择框填充可用空间 */
+    min-width: 80px; /* 最小宽度 */
+    max-width: 150px; /* 最大宽度 */
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.effect-group input[type="range"].effect-slider {
+    flex-grow: 1;
+    width: auto; /* 允许滑块自适应宽度 */
+    margin: 0 5px;
+}
+
+.effect-group span {
+    min-width: 30px; /* 确保显示值的空间 */
+    text-align: center;
+}
+
+/* 针对复选框的样式 */
+.effect-group input[type="checkbox"] {
+    margin-right: 5px;
+    width: auto; /* 恢复默认宽度 */
+    height: auto; /* 恢复默认高度 */
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.effect-group label[for="qualityAutoToggle"],
+.effect-group label[for="dprAutoToggle"] {
+    cursor: pointer;
+}
+
+/* 响应式设计 */
+
+/* 针对小屏幕设备 (例如手机，最大宽度 768px) */
+@media (max-width: 768px) {
+    body {
+        margin: 10px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        text-align: center;
+    }
+
+    h2 {
+        font-size: 1.4rem;
+    }
+
+    section {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    input[type="file"],
+    input[type="text"],
+    button,
+    select {
+        width: 100%; /* 输入框和按钮占据全宽 */
+        box-sizing: border-box; /* 包含 padding 和 border 在宽度内 */
+    }
+
+    .image-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* 小屏幕上图片更小 */
+        gap: 10px;
+    }
+
+    .image-gallery img {
+        height: 120px;
+    }
+
+    .image-editor {
+        flex-direction: column; /* 垂直堆叠预览图片 */
+        gap: 15px;
+    }
+
+    .image-preview img,
+    .image-detail-viewer img {
+        max-height: 250px; /* 调整图片最大高度 */
+    }
+
+    .controls {
+        flex-direction: column; /* 垂直堆叠控制按钮 */
+        align-items: stretch; /* 按钮拉伸到全宽 */
+        gap: 8px;
+    }
+
+    .controls button,
+    .controls .effect-group {
+        width: 100%; /* 按钮和效果组占据全宽 */
+        box-sizing: border-box;
+    }
+
+    .effect-group {
+        flex-direction: column; /* 效果组内部元素垂直堆叠 */
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .effect-group label {
+        width: 100%; /* 标签占据全宽 */
+        text-align: left;
+    }
+
+    .effect-group input[type="text"],
+    .effect-group input[type="number"],
+    .effect-group select.effect-select,
+    .effect-group input[type="range"].effect-slider {
+        width: 100%; /* 输入框、选择框和滑块占据全宽 */
+        max-width: none; /* 移除最大宽度限制 */
+    }
+}
+
+/* 针对中等屏幕设备 (例如平板，宽度在 769px 到 1024px 之间) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .image-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 20px;
+    }
+
+    .image-gallery img {
+        height: 180px;
+    }
+
+    .image-editor {
+        gap: 25px;
+    }
+
+    .image-preview img,
+    .image-detail-viewer img {
+        max-height: 350px;
+    }
+
+    .controls {
+        gap: 12px;
+    }
+
+    .effect-group {
+        gap: 12px;
+    }
+}

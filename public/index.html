@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudinary 图片管理</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Kapture 图片上传与管理</h1>
+
+    <section>
+        <h2>上传图片</h2>
+        <form id="uploadForm">
+            <label for="imageFile">选择图片:</label>
+            <input type="file" id="imageFile" name="image" accept="image/*" required title="选择要上传的图片">
+            <label for="uploadFolderInput">上传到文件夹 (可选):</label>
+            <input type="text" id="uploadFolderInput" placeholder="输入文件夹名称 (例如: my_new_folder)">
+            <label for="uploadTagsInput">添加标签 (可选, 逗号分隔):</label>
+            <input type="text" id="uploadTagsInput" placeholder="例如: nature, landscape">
+            <button type="submit">上传</button>
+        </form>
+        <div id="uploadResult"></div>
+    </section>
+
+    <section>
+        <h2>图片画廊</h2>
+        <div class="folder-navigation">
+            当前文件夹: <span id="currentFolderDisplay">/worker_uploads</span>
+            <input type="text" id="folderInput" placeholder="输入文件夹名称">
+            <button id="goToFolderButton">跳转</button>
+        </div>
+        <div class="tag-search">
+            <label for="searchTagInput">按标签搜索:</label>
+            <input type="text" id="searchTagInput" placeholder="输入标签 (例如: nature)">
+            <button id="searchByTagButton">搜索</button>
+            <button id="clearTagSearchButton">清除搜索</button>
+        </div>
+        <div id="imageGallery" class="image-gallery">
+            <p>加载图片中...</p>
+        </div>
+        <div class="controls">
+            <button id="deleteSelectedImageButton">删除选中图片</button>
+        </div>
+    </section>
+
+    <section>
+        <h2>图片详情</h2>
+        <div class="image-detail-viewer">
+            <img id="detailImage" src="" alt="图片详情" class="hidden">
+            <p>Public ID: <span id="detailPublicId"></span></p>
+            <p>URL: <a id="detailImageUrl" href="#" target="_blank">点击查看完整URL</a></p>
+        </div>
+    </section>
+
+    <section>
+        <h2>图片编辑</h2>
+        <div class="image-editor">
+            <div class="image-preview">
+                <h3>原图</h3>
+                <img id="originalImage" src="" alt="原图" class="hidden">
+            </div>
+            <div class="image-preview">
+                <h3>转换后图片</h3>
+                <img id="transformedImage" src="" alt="转换后图片" class="hidden">
+            </div>
+        </div>
+        <div class="controls">
+            <h3>Enhancements</h3>
+            <button class="effect-button" data-effect="none">None</button>
+            <button class="effect-button" data-effect="improve">Improve</button>
+            <button class="effect-button" data-effect="auto_brightness">Auto Brightness</button>
+            <button class="effect-button" data-effect="auto_color">Auto Color</button>
+            <button class="effect-button" data-effect="auto_contrast">Auto Contrast</button>
+            <button class="effect-button" data-effect="sharpen">Sharpen</button>
+            <button class="effect-button" data-effect="vibrance">Vibrance</button>
+            <button class="effect-button" data-effect="upscale">Upscale</button>
+            <button class="effect-button" data-effect="enhance">Enhance</button>
+        </div>
+
+        <h3>艺术效果 (Artistic Effects)</h3>
+        <div class="controls">
+            <button class="effect-button" data-effect="cartoonify">Cartoonify</button>
+            <button class="effect-button" data-effect="sepia">Sepia</button>
+            <button class="effect-button" data-effect="vignette">Vignette</button>
+            <button class="effect-button" data-effect="pixelate">Pixelate</button>
+            <button class="effect-button" data-effect="grayscale">Grayscale</button>
+            <div class="effect-group">
+                <label for="artFilterSelect">艺术滤镜:</label>
+                <select id="artFilterSelect" class="effect-select" data-effect="e_art">
+                    <option value="">选择滤镜</option>
+                    <option value="al_dente">Al Dente</option>
+                    <option value="athena">Athena</option>
+                    <option value="audrey">Audrey</option>
+                    <option value="aurora">Aurora</option>
+                    <option value="daguerre">Daguerre</option>
+                    <option value="eucalyptus">Eucalyptus</option>
+                    <option value="fes">Fes</option>
+                    <option value="frost">Frost</option>
+                    <option value="hairspray">Hairspray</option>
+                    <option value="hokusai">Hokusai</option>
+                    <option value="incognito">Incognito</option>
+                    <option value="linen">Linen</option>
+                    <option value="peacock">Peacock</option>
+                    <option value="primavera">Primavera</option>
+                    <option value="quartz">Quartz</option>
+                    <option value="red_rock">Red Rock</option>
+                    <option value="refresh">Refresh</option>
+                    <option value="sizzle">Sizzle</option>
+                    <option value="sonnet">Sonnet</option>
+                    <option value="ukulele">Ukulele</option>
+                    <option value="zorro">Zorro</option>
+                </select>
+            </div>
+        </div>
+
+        <h3>背景与阴影 (Background & Shadow)</h3>
+        <div class="controls">
+            <button class="effect-button" data-effect="remove_background">Remove Background</button>
+            <button class="effect-button" data-effect="shadow">Shadow</button>
+            <button class="effect-button" data-effect="vectorize">矢量化</button>
+        </div>
+
+        <h3>不透明度 (Opacity)</h3>
+        <div class="controls">
+            <label for="opacityInput">不透明度 (0-100):</label>
+            <input type="range" id="opacityInput" min="0" max="100" value="100" class="effect-slider" data-effect="o">
+            <span id="opacityValue">100</span>
+        </div>
+
+        <div class="controls">
+            <div class="effect-group">
+                <label for="replaceColorFrom">替换颜色 (原色):</label>
+                <input type="text" id="replaceColorFrom" placeholder="例如: red 或 #FF0000">
+                <label for="replaceColorTo">替换颜色 (目标色):</label>
+                <input type="text" id="replaceColorTo" placeholder="例如: blue 或 #0000FF">
+                <label for="replaceColorTolerance">容差 (可选):</label>
+                <input type="number" id="replaceColorTolerance" min="0" max="100" placeholder="0-100">
+                <button class="effect-button" data-effect="replace_color">替换颜色</button>
+            </div>
+        </div>
+
+        <h3>图像转换 (Image Transformations)</h3>
+        <div class="controls">
+            <div class="effect-group">
+                <label for="formatSelect">格式转换:</label>
+                <select id="formatSelect" class="effect-select" data-effect="f">
+                    <option value="">选择格式</option>
+                    <option value="jpg">JPG</option>
+                    <option value="png">PNG</option>
+                    <option value="webp">WebP</option>
+                    <option value="avif">AVIF</option>
+                    <option value="auto">Auto</option>
+                </select>
+            </div>
+            <div class="effect-group">
+                <label for="cropWidth">裁剪宽度:</label>
+                <input type="number" id="cropWidth" placeholder="宽度">
+                <label for="cropHeight">裁剪高度:</label>
+                <input type="number" id="cropHeight" placeholder="高度">
+                <label for="cropModeSelect">裁剪模式:</label>
+                <select id="cropModeSelect" class="effect-select" data-effect="c">
+                    <option value="">选择模式</option>
+                    <option value="fill">Fill</option>
+                    <option value="scale">Scale</option>
+                    <option value="crop">Crop</option>
+                    <option value="pad">Pad</option>
+                    <option value="limit">Limit</option>
+                    <option value="fit">Fit</option>
+                    <option value="thumb">Thumb</option>
+                </select>
+                <button class="effect-button" data-effect="crop_resize">裁剪/调整大小</button>
+            </div>
+            <div class="effect-group">
+                <label for="qualityInput">质量 (1-100):</label>
+                <input type="range" id="qualityInput" min="1" max="100" value="80" class="effect-slider" data-effect="q">
+                <span id="qualityValue">80</span>
+                <input type="checkbox" id="qualityAutoToggle">
+                <label for="qualityAutoToggle">自动质量 (q_auto)</label>
+            </div>
+            <div class="effect-group">
+                <label for="dprInput">DPR:</label>
+                <input type="number" id="dprInput" step="0.1" placeholder="例如: 2.0">
+                <input type="checkbox" id="dprAutoToggle">
+                <label for="dprAutoToggle">自动DPR (dpr_auto)</label>
+                <button class="effect-button" data-effect="dpr">应用DPR</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="confirmButton">Confirm</button>
+            <button id="saveButton">Save</button>
+            <button id="resetButton">Reset All Effects</button>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>

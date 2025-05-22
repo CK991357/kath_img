@@ -1,0 +1,10 @@
+.env
+node_modules/
+server.js
+local_upload.js
+scrape_docs.py
+backup/
+cases/
+docs/
+Guide/
+memory-bank/
