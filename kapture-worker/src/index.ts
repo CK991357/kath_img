@@ -48,69 +48,14 @@ export default {
    * @param {ExecutionContext} ctx - Worker 的执行上下文，用于管理生命周期。
    * @returns {Response} - 返回的 Response 对象。
    */
-  async fetch(request: Request, env: { AUTH_PASSWORD: string; CLOUDINARY_CLOUD_NAME: string; CLOUDINARY_API_KEY: string; CLOUDINARY_API_SECRET: string }, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: { CLOUDINARY_CLOUD_NAME: string; CLOUDINARY_API_KEY: string; CLOUDINARY_API_SECRET: string; ASSETS: { fetch: (request: Request) => Promise<Response> } }, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
 
     try {
-      // 从环境变量中获取密码
-      const CORRECT_PASSWORD = env.AUTH_PASSWORD;
-      if (!CORRECT_PASSWORD) {
-        console.warn('AUTH_PASSWORD is not set in Worker environment. Access will not be protected.');
-        return handleAuthenticatedRequest(request, env, path, method);
-      }
-
-      // 检查是否已登录（Cookie验证）
-      const cookies = request.headers.get('Cookie')?.split('; ') || [];
-      let passwordValue = null;
-      for (const cookie of cookies) {
-        const [name, ...rest] = cookie.split('=');
-        if (name === 'password') {
-          passwordValue = decodeURIComponent(rest.join('='));
-          break;
-        }
-      }
-
-      // 处理POST请求（密码提交）
-      if (method === 'POST' && path === '/') {
-        const ct = request.headers.get('Content-Type') || '';
-        if (!ct.includes('application/x-www-form-urlencoded')) {
-          return new Response('Unsupported Content-Type', { status: 400 });
-        }
-
-        let formData;
-        try {
-          formData = await request.formData();
-        } catch (error) {
-          return new Response('Invalid form data', { status: 400 });
-        }
-
-        const entered = formData.get('password');
-        if (entered === CORRECT_PASSWORD) {
-          const encodedPassword = encodeURIComponent(CORRECT_PASSWORD);
-          const headers = new Headers({
-            'Location': '/',
-            'Set-Cookie': `password=${encodedPassword}; Path=/; HttpOnly; Secure; SameSite=Strict`
-          });
-          return new Response(null, { status: 302, headers });
-        } else {
-          return new Response(generateLoginPage('密码错误，请重试。'), {
-            status: 401,
-            headers: { 'Content-Type': 'text/html; charset=utf-8' }
-          });
-        }
-      }
-
-      // 非POST请求：检查Cookie是否有效
-      if (passwordValue === CORRECT_PASSWORD) {
-        return handleAuthenticatedRequest(request, env, path, method);
-      } else {
-        return new Response(generateLoginPage(), {
-          status: 401,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        });
-      }
+      // 直接处理请求，不进行密码验证
+      return handleAuthenticatedRequest(request, env, path, method);
     } catch (error: any) {
       console.error('Worker Request Handling Error:', error);
       return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), {
@@ -129,7 +74,7 @@ export default {
  * @param {string} method - 请求方法。
  * @returns {Response} - 返回的 Response 对象。
  */
-async function handleAuthenticatedRequest(request: Request, env: { CLOUDINARY_CLOUD_NAME: string; CLOUDINARY_API_KEY: string; CLOUDINARY_API_SECRET: string }, path: string, method: string): Promise<Response> {
+async function handleAuthenticatedRequest(request: Request, env: { CLOUDINARY_CLOUD_NAME: string; CLOUDINARY_API_KEY: string; CLOUDINARY_API_SECRET: string; ASSETS: { fetch: (request: Request) => Promise<Response> } }, path: string, method: string): Promise<Response> {
   // Cloudinary 配置信息
   const CLOUD_NAME = env.CLOUDINARY_CLOUD_NAME;
   const API_KEY = env.CLOUDINARY_API_KEY;
@@ -164,9 +109,8 @@ async function handleAuthenticatedRequest(request: Request, env: { CLOUDINARY_CL
   }
 
   // 如果不是 API 请求，则尝试服务静态文件
-  // 注意：这里假设 Pages 已经配置为服务静态文件，Worker 只是作为代理或增强
-  // 如果 Pages 无法直接服务，这里可能需要从 KV 或其他存储中获取静态文件
-  return fetch(request);
+  // 使用 ASSETS 绑定来服务 Cloudflare Pages 上的静态文件
+  return env.ASSETS.fetch(request);
 }
 
 /**
@@ -560,50 +504,4 @@ async function handleDeleteImage(request: Request, cloudName: string, apiKey: st
       status: 500
     });
   }
-}
-
-/**
- * 登录页HTML模板
- * @param {string} [errorMessage=''] - 错误信息，用于在页面上显示
- * @returns {string} - 登录页的完整 HTML 字符串
- */
-function generateLoginPage(errorMessage = '') {
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>访问验证 - Kapture</title>
-  <style>
-    body { margin:0; font-family:sans-serif; display:flex; justify-content:center; align-items:center; min-height:100vh;
-           background:linear-gradient(to bottom right, #4CAF50, #2196F3); color:#fff; } /* 绿色到蓝色渐变 */
-    .login-container { background:rgba(255,255,255,0.9); padding:2.5rem; border-radius:.75rem; box-shadow:0 8px 16px rgba(0,0,0,0.2);
-                       width:100%; max-width:450px; text-align:center; color:#333; }
-    h1 { font-size:2rem; color:#3F51B5; margin-bottom:1.5rem; } /* 深蓝色标题 */
-    .error-message { color:#F44336; margin-bottom:1.5rem; font-weight:bold; } /* 红色错误信息 */
-    .form-group { margin-bottom:1.5rem; text-align:left; }
-    label { display:block; margin-bottom:.75rem; color:#607D8B; font-weight:bold; } /* 灰色标签 */
-    input[type="password"] { width:calc(100% - 1.5rem); padding:.8rem; border:1px solid #B0BEC5; border-radius:.5rem;
-                             font-size:1.1rem; box-sizing:border-box; }
-    input[type="password"]:focus { border-color:#2196F3; outline:none; box-shadow:0 0 0 3px rgba(33,150,243,0.3); }
-    button { width:100%; padding:.9rem; background:linear-gradient(to right, #2196F3, #4CAF50); /* 蓝色到绿色渐变按钮 */
-             color:#fff; font-weight:bold; border:none; border-radius:.5rem; cursor:pointer; transition:all .3s ease;
-             font-size:1.2rem; letter-spacing:1px; }
-    button:hover { transform:translateY(-2px); box-shadow:0 6px 12px rgba(0,0,0,0.2); }
-  </style>
-</head>
-<body>
-  <div class="login-container">
-    <h1>Kapture 访问验证</h1>
-    ${errorMessage ? `<p class="error-message">${errorMessage}</p>` : ''}
-    <form method="POST">
-      <div class="form-group">
-        <label for="password">请输入密码：</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-      <button type="submit">验证</button>
-    </form>
-  </div>
-</body>
-</html>`;
 }
