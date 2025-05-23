@@ -65,6 +65,27 @@
                 <img id="transformedImage" src="" alt="转换后图片" class="hidden">
             </div>
         </div>
+
+        <!-- 颜色调整 -->
+        <div class="section">
+            <h3>颜色调整</h3>
+            <div class="control-group">
+                <label for="brightnessInput">亮度:</label>
+                <input type="range" id="brightnessInput" min="-100" max="100" value="0">
+                <span id="brightnessValue">0</span>
+            </div>
+            <div class="control-group">
+                <label for="contrastInput">对比度:</label>
+                <input type="range" id="contrastInput" min="-100" max="100" value="0">
+                <span id="contrastValue">0</span>
+            </div>
+            <div class="control-group">
+                <label for="saturationInput">饱和度:</label>
+                <input type="range" id="saturationInput" min="-100" max="100" value="0">
+                <span id="saturationValue">0</span>
+            </div>
+        </div>
+
         <div class="controls">
             <h3>Enhancements</h3>
             <button class="effect-button" data-effect="none">None</button>
@@ -204,26 +225,6 @@
             </div>
         </div>
 
-        <!-- 颜色调整 -->
-        <div class="section">
-            <h3>颜色调整</h3>
-            <div class="control-group">
-                <label for="brightnessInput">亮度:</label>
-                <input type="range" id="brightnessInput" min="-100" max="100" value="0">
-                <span id="brightnessValue">0</span>
-            </div>
-            <div class="control-group">
-                <label for="contrastInput">对比度:</label>
-                <input type="range" id="contrastInput" min="-100" max="100" value="0">
-                <span id="contrastValue">0</span>
-            </div>
-            <div class="control-group">
-                <label for="saturationInput">饱和度:</label>
-                <input type="range" id="saturationInput" min="-100" max="100" value="0">
-                <span id="saturationValue">0</span>
-            </div>
-        </div>
-
         <!-- 模糊与像素化 -->
         <div class="section">
             <h3>模糊与像素化</h3>
@@ -238,8 +239,8 @@
                 <span id="pixelateValue">0</span>
             </div>
             <div class="control-group">
-                <button id="blurFacesButton" class="action-button">人脸模糊</button>
-                <button id="pixelateFacesButton" class="action-button">人脸像素化</button>
+                <button id="blurFacesButton" class="effect-button">人脸模糊</button>
+                <button id="pixelateFacesButton" class="effect-button">人脸像素化</button>
             </div>
         </div>
 
