@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadResult.innerHTML = '<p>正在上传...</p>';
 
         try {
-            const response = await fetch('/upload', {
+            const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData
             });
