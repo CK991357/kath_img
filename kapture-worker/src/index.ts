@@ -199,19 +199,25 @@ async function handleGetImages(request: Request, cloudName: string, apiKey: stri
     const folder = url.searchParams.get('folder');
     const tag = url.searchParams.get('tag');
 
-    let apiUrl = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/upload`;
+    let requestUrl: string;
     const queryParams = new URLSearchParams();
     queryParams.append('max_results', '50');
 
     if (tag) {
-      apiUrl = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/upload?tag=${tag}`;
+      requestUrl = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/tags/${tag}`; // 更正为正确的标签搜索路径
+      // 当按标签搜索时，不需要 type=upload 参数
     } else if (folder) {
+      requestUrl = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/upload`;
       queryParams.append('prefix', `${folder}/`);
+      queryParams.append('type', 'upload'); // 仅在按文件夹搜索时添加 type=upload
+    } else {
+      requestUrl = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/upload`;
+      queryParams.append('type', 'upload'); // 默认情况下添加 type=upload
     }
 
     const authHeader = btoa(`${apiKey}:${apiSecret}`);
 
-    const response = await fetch(`${apiUrl}?${queryParams.toString()}`, {
+    const response = await fetch(`${requestUrl}?${queryParams.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': `Basic ${authHeader}`,
