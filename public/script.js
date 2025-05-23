@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 不透明度滑块
     opacityInput.addEventListener('input', () => {
         if (!selectedPublicId) {
-            // 如果没有选中图片，则静默返回，不弹出提示 (程序化触发)
+            alert('请先从画廊中选择一张图片进行编辑。');
             return;
         }
         const opacity = opacityInput.value;
@@ -376,9 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 质量滑块和自动质量切换
     qualityInput.addEventListener('input', () => {
-        console.log('Checking selectedPublicId in qualityInput input. Current value:', selectedPublicId);
         if (!selectedPublicId) {
-            // 如果没有选中图片，则静默返回，不弹出提示 (程序化触发)
+            alert('请先从画廊中选择一张图片进行编辑。');
             return;
         }
         const quality = qualityInput.value;
@@ -436,10 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Confirm 按钮现在触发所有当前转换
     confirmButton.addEventListener('click', () => {
-        if (!selectedPublicId) {
-            alert('请先从画廊中选择一张图片进行编辑。');
-            return;
-        }
         applyTransformations(selectedPublicId, currentTransformations);
     });
 
@@ -491,7 +486,6 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {Promise<void>}
      */
     async function deleteSelectedImage() {
-        console.log('deleteSelectedImage called. selectedPublicId:', selectedPublicId);
         if (!selectedPublicId) {
             alert('请先从画廊中选择一张图片进行删除。');
             return;
@@ -539,10 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 删除选中图片按钮事件监听器
-    deleteSelectedImageButton.addEventListener('click', (event) => {
-        event.stopPropagation(); // 阻止事件冒泡
-        deleteSelectedImage();
-    });
+    deleteSelectedImageButton.addEventListener('click', deleteSelectedImage);
 
 
     // 跳转文件夹按钮事件监听器
