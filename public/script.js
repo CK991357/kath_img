@@ -287,7 +287,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 不透明度滑块
-    opacityInput.addEventListener('input', () => {
+    opacityInput.addEventListener('input', (event) => {
+        // 如果是程序化触发的事件，且没有选中图片，则静默返回
+        if (!selectedPublicId && !event.isTrusted) {
+            return;
+        }
+        // 如果没有选中图片，则弹出提示
         if (!selectedPublicId) {
             alert('请先从画廊中选择一张图片进行编辑。');
             return;
@@ -375,7 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 质量滑块和自动质量切换
-    qualityInput.addEventListener('input', () => {
+    qualityInput.addEventListener('input', (event) => {
+        // 如果是程序化触发的事件，且没有选中图片，则静默返回
+        if (!selectedPublicId && !event.isTrusted) {
+            return;
+        }
+        // 如果没有选中图片，则弹出提示
         if (!selectedPublicId) {
             alert('请先从画廊中选择一张图片进行编辑。');
             return;
