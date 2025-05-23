@@ -338,8 +338,30 @@ async function handleTransformImage(request: Request, cloudName: string): Promis
             let cropPart = `c_${params.crop_mode}`;
             if (params.width) cropPart += `,w_${params.width}`;
             if (params.height) cropPart += `,h_${params.height}`;
+            if (params.gravity) cropPart += `,g_${params.gravity}`; // 添加重力参数
             part = cropPart;
           }
+          break;
+        // 颜色调整
+        case 'e_brightness':
+        case 'e_contrast':
+        case 'e_saturation':
+          if (params && params.level !== undefined) {
+            part = `e_${effectType.replace('e_', '')}:${params.level}`;
+          }
+          break;
+        // 模糊与像素化
+        case 'e_blur':
+        case 'e_pixelate':
+          if (params && params.strength !== undefined) {
+            part = `e_${effectType.replace('e_', '')}:${params.strength}`;
+          }
+          break;
+        case 'e_blur_faces':
+          part = 'e_blur_faces';
+          break;
+        case 'e_pixelate_faces':
+          part = 'e_pixelate_faces';
           break;
         case 'q':
           if (params && params.level !== undefined) {

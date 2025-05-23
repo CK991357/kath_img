@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kath's Img Assisstnt  图片管理</title>
+    <title>Kath's Img Assisstnt 图片管理</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -169,8 +169,25 @@
                     <option value="fit">Fit</option>
                     <option value="thumb">Thumb</option>
                 </select>
-                <button class="effect-button" data-effect="crop_resize">裁剪/调整大小</button>
             </div>
+            <div class="control-group">
+                <label for="cropGravitySelect">裁剪重力:</label>
+                <select id="cropGravitySelect">
+                    <option value="">无 (默认)</option>
+                    <option value="auto">自动识别兴趣点</option>
+                    <option value="face">人脸</option>
+                    <option value="north">顶部</option>
+                    <option value="south">底部</option>
+                    <option value="east">右侧</option>
+                    <option value="west">左侧</option>
+                    <option value="center">中心</option>
+                    <option value="north_east">右上</option>
+                    <option value="north_west">左上</option>
+                    <option value="south_east">右下</option>
+                    <option value="south_west">左下</option>
+                </select>
+            </div>
+            <button class="effect-button" data-effect="crop_resize">裁剪/调整大小</button>
             <div class="effect-group">
                 <label for="qualityInput">质量 (1-100):</label>
                 <input type="range" id="qualityInput" min="1" max="100" value="80" class="effect-slider" data-effect="q">
@@ -184,6 +201,45 @@
                 <input type="checkbox" id="dprAutoToggle">
                 <label for="dprAutoToggle">自动DPR (dpr_auto)</label>
                 <button class="effect-button" data-effect="dpr">应用DPR</button>
+            </div>
+        </div>
+
+        <!-- 颜色调整 -->
+        <div class="section">
+            <h3>颜色调整</h3>
+            <div class="control-group">
+                <label for="brightnessInput">亮度:</label>
+                <input type="range" id="brightnessInput" min="-100" max="100" value="0">
+                <span id="brightnessValue">0</span>
+            </div>
+            <div class="control-group">
+                <label for="contrastInput">对比度:</label>
+                <input type="range" id="contrastInput" min="-100" max="100" value="0">
+                <span id="contrastValue">0</span>
+            </div>
+            <div class="control-group">
+                <label for="saturationInput">饱和度:</label>
+                <input type="range" id="saturationInput" min="-100" max="100" value="0">
+                <span id="saturationValue">0</span>
+            </div>
+        </div>
+
+        <!-- 模糊与像素化 -->
+        <div class="section">
+            <h3>模糊与像素化</h3>
+            <div class="control-group">
+                <label for="blurInput">模糊强度:</label>
+                <input type="range" id="blurInput" min="0" max="2000" value="0">
+                <span id="blurValue">0</span>
+            </div>
+            <div class="control-group">
+                <label for="pixelateInput">像素化强度:</label>
+                <input type="range" id="pixelateInput" min="0" max="200" value="0">
+                <span id="pixelateValue">0</span>
+            </div>
+            <div class="control-group">
+                <button id="blurFacesButton" class="action-button">人脸模糊</button>
+                <button id="pixelateFacesButton" class="action-button">人脸像素化</button>
             </div>
         </div>
 

@@ -39,6 +39,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailPublicId = document.getElementById('detailPublicId');
     const detailImageUrl = document.getElementById('detailImageUrl'); // 新增的URL显示元素
 
+    // 新增的重力设置DOM元素
+    const cropGravitySelect = document.getElementById('cropGravitySelect');
+
+    // 新增的颜色调整DOM元素
+    const brightnessInput = document.getElementById('brightnessInput');
+    const brightnessValueSpan = document.getElementById('brightnessValue');
+    const contrastInput = document.getElementById('contrastInput');
+    const contrastValueSpan = document.getElementById('contrastValue');
+    const saturationInput = document.getElementById('saturationInput');
+    const saturationValueSpan = document.getElementById('saturationValue');
+    // const tintColorInput = document.getElementById('tintColorInput'); // 已删除
+    // const applyTintButton = document.getElementById('applyTintButton'); // 已删除
+
+    // 新增的模糊与像素化DOM元素
+    const blurInput = document.getElementById('blurInput');
+    const blurValueSpan = document.getElementById('blurValue');
+    const pixelateInput = document.getElementById('pixelateInput');
+    const pixelateValueSpan = document.getElementById('pixelateValue');
+    const blurFacesButton = document.getElementById('blurFacesButton');
+    const pixelateFacesButton = document.getElementById('pixelateFacesButton');
+
+    // 新增的文本叠加DOM元素 (已删除)
+    // const overlayTextInput = document.getElementById('overlayTextInput');
+    // const overlayFontSelect = document.getElementById('overlayFontSelect');
+    // const overlayFontSizeInput = document.getElementById('overlayFontSizeInput');
+    // const overlayFontColorInput = document.getElementById('overlayFontColorInput');
+    // const overlayGravitySelect = document.getElementById('overlayGravitySelect');
+    // const overlayOffsetXInput = document.getElementById('overlayOffsetXInput');
+    // const overlayOffsetYInput = document.getElementById('overlayOffsetYInput');
+    // const applyTextOverlayButton = document.getElementById('applyTextOverlayButton');
+
     // 新增的文件夹相关DOM元素
     const uploadFolderInput = document.getElementById('uploadFolderInput');
     const currentFolderDisplay = document.getElementById('currentFolderDisplay');
@@ -73,9 +104,40 @@ document.addEventListener('DOMContentLoaded', () => {
         replaceColorToleranceInput.value = '';
         cropWidthInput.value = '';
         cropHeightInput.value = '';
+        cropGravitySelect.value = ''; // 重置重力选择
         dprInput.value = '';
         qualityAutoToggle.checked = false;
         dprAutoToggle.checked = false;
+
+        // 重置颜色调整
+        brightnessInput.value = '0';
+        brightnessValueSpan.textContent = '0';
+        contrastInput.value = '0';
+        contrastValueSpan.textContent = '0';
+        saturationInput.value = '0';
+        saturationValueSpan.textContent = '0';
+        // tintColorInput.value = '#FFFFFF'; // 已删除
+        delete currentTransformations['e_tint']; // 确保色调效果也被清除
+
+        // 重置模糊与像素化
+        blurInput.value = '0';
+        blurValueSpan.textContent = '0';
+        pixelateInput.value = '0';
+        pixelateValueSpan.textContent = '0';
+        // 确保人脸模糊/像素化效果也被清除
+        delete currentTransformations['e_blur_faces'];
+        delete currentTransformations['e_pixelate_faces'];
+
+        // 重置文本叠加 (已删除)
+        // overlayTextInput.value = '';
+        // overlayFontSelect.value = 'arial';
+        // overlayFontSizeInput.value = '30';
+        // overlayFontColorInput.value = '#FFFFFF';
+        // overlayGravitySelect.value = 'north_west';
+        // overlayOffsetXInput.value = '0';
+        // overlayOffsetYInput.value = '0';
+        // 确保文本叠加效果也被清除
+        delete currentTransformations['l']; // 键名已改为 'l'
 
         currentTransformations = {}; // 清空所有转换
         transformedImage.src = originalImageUrl; // 显示原图
@@ -169,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadResult.innerHTML = '<p>正在上传...</p>';
 
         try {
-            const response = await fetch('/api/upload', {
+            const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData
             });
@@ -287,14 +349,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 不透明度滑块
-    opacityInput.addEventListener('input', (event) => {
-        // 如果是程序化触发的事件，且没有选中图片，则静默返回
-        if (!selectedPublicId && !event.isTrusted) {
-            return;
-        }
-        // 如果没有选中图片，则弹出提示
+    opacityInput.addEventListener('input', () => {
         if (!selectedPublicId) {
-            alert('请先从画廊中选择一张图片进行编辑。');
+            // 如果没有选中图片，则静默返回，不弹出提示 (程序化触发)
             return;
         }
         const opacity = opacityInput.value;
@@ -361,6 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const width = cropWidthInput.value;
         const height = cropHeightInput.value;
         const cropMode = cropModeSelect.value;
+        const cropGravity = cropGravitySelect.value; // 获取重力选择的值
 
         if (!width && !height) {
             alert('请输入宽度或高度。');
@@ -374,20 +432,94 @@ document.addEventListener('DOMContentLoaded', () => {
         const params = { crop_mode: cropMode };
         if (width) params.width = width;
         if (height) params.height = height;
+        if (cropGravity) params.gravity = cropGravity; // 添加重力参数
 
         currentTransformations['c'] = params;
         applyTransformations(selectedPublicId, currentTransformations);
     });
 
-    // 质量滑块和自动质量切换
-    qualityInput.addEventListener('input', (event) => {
-        // 如果是程序化触发的事件，且没有选中图片，则静默返回
-        if (!selectedPublicId && !event.isTrusted) {
-            return;
+    // 颜色调整滑块事件
+    [brightnessInput, contrastInput, saturationInput].forEach(input => {
+        input.addEventListener('input', () => {
+            if (!selectedPublicId) { alert('请先选择图片'); return; }
+            const effectType = input.id.replace('Input', ''); // brightness, contrast, saturation
+            const value = input.value;
+            document.getElementById(`${effectType}Value`).textContent = value;
+            if (value !== '0') {
+                currentTransformations[`e_${effectType}`] = { level: value };
+            } else {
+                delete currentTransformations[`e_${effectType}`];
+            }
+            applyTransformations(selectedPublicId, currentTransformations);
+        });
+    });
+
+    // 颜色调整滑块事件
+    [brightnessInput, contrastInput, saturationInput].forEach(input => {
+        input.addEventListener('input', () => {
+            if (!selectedPublicId) { alert('请先选择图片'); return; }
+            const effectType = input.id.replace('Input', ''); // brightness, contrast, saturation
+            const value = input.value;
+            document.getElementById(`${effectType}Value`).textContent = value;
+            if (value !== '0') {
+                currentTransformations[`e_${effectType}`] = { level: value };
+            } else {
+                delete currentTransformations[`e_${effectType}`];
+            }
+            applyTransformations(selectedPublicId, currentTransformations);
+        });
+    });
+
+    // 模糊/像素化滑块事件
+    blurInput.addEventListener('input', () => {
+        if (!selectedPublicId) { alert('请先选择图片'); return; }
+        const value = blurInput.value;
+        blurValueSpan.textContent = value;
+        if (value !== '0') {
+            currentTransformations['e_blur'] = { strength: value };
+        } else {
+            delete currentTransformations['e_blur'];
         }
-        // 如果没有选中图片，则弹出提示
+        applyTransformations(selectedPublicId, currentTransformations);
+    });
+
+    pixelateInput.addEventListener('input', () => {
+        if (!selectedPublicId) { alert('请先选择图片'); return; }
+        const value = pixelateInput.value;
+        pixelateValueSpan.textContent = value;
+        if (value !== '0') {
+            currentTransformations['e_pixelate'] = { strength: value };
+        } else {
+            delete currentTransformations['e_pixelate'];
+        }
+        applyTransformations(selectedPublicId, currentTransformations);
+    });
+
+    // 人脸模糊/像素化按钮事件 (切换逻辑)
+    blurFacesButton.addEventListener('click', () => {
+        if (!selectedPublicId) { alert('请先选择图片'); return; }
+        if (currentTransformations['e_blur_faces']) {
+            delete currentTransformations['e_blur_faces']; // 如果已存在，则撤销
+        } else {
+            currentTransformations['e_blur_faces'] = {}; // 否则应用
+        }
+        applyTransformations(selectedPublicId, currentTransformations);
+    });
+    pixelateFacesButton.addEventListener('click', () => {
+        if (!selectedPublicId) { alert('请先选择图片'); return; }
+        if (currentTransformations['e_pixelate_faces']) {
+            delete currentTransformations['e_pixelate_faces']; // 如果已存在，则撤销
+        } else {
+            currentTransformations['e_pixelate_faces'] = {}; // 否则应用
+        }
+        applyTransformations(selectedPublicId, currentTransformations);
+    });
+
+    // 质量滑块和自动质量切换
+    qualityInput.addEventListener('input', () => {
+        console.log('Checking selectedPublicId in qualityInput input. Current value:', selectedPublicId);
         if (!selectedPublicId) {
-            alert('请先从画廊中选择一张图片进行编辑。');
+            // 如果没有选中图片，则静默返回，不弹出提示 (程序化触发)
             return;
         }
         const quality = qualityInput.value;
@@ -445,6 +577,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Confirm 按钮现在触发所有当前转换
     confirmButton.addEventListener('click', () => {
+        if (!selectedPublicId) {
+            alert('请先从画廊中选择一张图片进行编辑。');
+            return;
+        }
         applyTransformations(selectedPublicId, currentTransformations);
     });
 
@@ -496,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {Promise<void>}
      */
     async function deleteSelectedImage() {
+        console.log('deleteSelectedImage called. selectedPublicId:', selectedPublicId);
         if (!selectedPublicId) {
             alert('请先从画廊中选择一张图片进行删除。');
             return;
@@ -543,7 +680,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 删除选中图片按钮事件监听器
-    deleteSelectedImageButton.addEventListener('click', deleteSelectedImage);
+    deleteSelectedImageButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // 阻止事件冒泡
+        deleteSelectedImage();
+    });
 
 
     // 跳转文件夹按钮事件监听器
