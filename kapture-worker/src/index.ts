@@ -356,6 +356,21 @@ async function handleTransformImage(request: Request, cloudName: string): Promis
             part = `e_${effectType.replace('e_', '')}:${params.level}`;
           }
           break;
+        // 补光
+        case 'e_fill_light':
+          if (params) {
+            let effectString = 'e_fill_light';
+            // 前端的 level 对应 Cloudinary 的 blend 参数
+            if (params.level !== undefined) {
+                effectString += `:${params.level}`;
+            }
+            // 前端的 blend 对应 Cloudinary 的 bias 参数
+            if (params.blend !== undefined) {
+                effectString += `:bias_${params.blend}`;
+            }
+            part = effectString;
+          }
+          break;
         // 模糊与像素化
         case 'e_blur':
         case 'e_pixelate':

@@ -49,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const contrastValueSpan = document.getElementById('contrastValue');
     const saturationInput = document.getElementById('saturationInput');
     const saturationValueSpan = document.getElementById('saturationValue');
+    const fillLightLevelInput = document.getElementById('fillLightLevelInput'); // 新增
+    const fillLightLevelValueSpan = document.getElementById('fillLightLevelValue'); // 新增
+    const fillLightBlendInput = document.getElementById('fillLightBlendInput'); // 新增
+    const fillLightBlendValueSpan = document.getElementById('fillLightBlendValue'); // 新增
     // const tintColorInput = document.getElementById('tintColorInput'); // 已删除
     // const applyTintButton = document.getElementById('applyTintButton'); // 已删除
 
@@ -116,6 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
         contrastValueSpan.textContent = '0';
         saturationInput.value = '0';
         saturationValueSpan.textContent = '0';
+        fillLightLevelInput.value = '0'; // 新增
+        fillLightLevelValueSpan.textContent = '0'; // 新增
+        fillLightBlendInput.value = '0'; // 新增
+        fillLightBlendValueSpan.textContent = '0'; // 新增
         // tintColorInput.value = '#FFFFFF'; // 已删除
         delete currentTransformations['e_tint']; // 确保色调效果也被清除
 
@@ -453,6 +461,40 @@ document.addEventListener('DOMContentLoaded', () => {
             applyTransformations(selectedPublicId, currentTransformations);
         });
     });
+
+    // 补光强度滑块
+    fillLightLevelInput.addEventListener('input', updateFillLight);
+    // 补光混合滑块
+    fillLightBlendInput.addEventListener('input', updateFillLight);
+
+    /**
+     * 更新补光效果的转换参数并应用
+     * @returns {void}
+     */
+    function updateFillLight() {
+        if (!selectedPublicId) { alert('请先选择图片'); return; }
+
+        const level = fillLightLevelInput.value;
+        const blend = fillLightBlendInput.value;
+
+        fillLightLevelValueSpan.textContent = level;
+        fillLightBlendValueSpan.textContent = blend;
+
+        // 只有当 level 或 blend 不为 0 时才应用 e_fill_light
+        if (level !== '0' || blend !== '0') {
+            currentTransformations['e_fill_light'] = { level: level };
+            if (blend !== '0') {
+                currentTransformations['e_fill_light'].blend = blend;
+            } else {
+                // 如果 blend 为 0，确保不发送 blend 参数
+                delete currentTransformations['e_fill_light'].blend;
+            }
+        } else {
+            // 如果 level 和 blend 都为 0，则移除 e_fill_light 转换
+            delete currentTransformations['e_fill_light'];
+        }
+        applyTransformations(selectedPublicId, currentTransformations);
+    }
 
     // 颜色调整滑块事件
     [brightnessInput, contrastInput, saturationInput].forEach(input => {
