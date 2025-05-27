@@ -40,6 +40,14 @@ async function generateCloudinarySignature(params: Record<string, any>, apiSecre
   return signature;
 }
 
+// CORS headers for cross-origin requests
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://pic.10110531.xyz', // 允许前端域名访问
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', // 允许的 HTTP 方法
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization', // 允许的请求头部
+  'Access-Control-Max-Age': '86400', // 预检请求的缓存时间 (24小时)
+};
+
 export default {
   /**
    * Cloudflare Worker 的入口函数，处理所有传入的 HTTP 请求。
@@ -53,13 +61,37 @@ export default {
     const path = url.pathname;
     const method = request.method;
 
+    // 处理 OPTIONS 预检请求
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: CORS_HEADERS,
+        status: 204 // No Content
+      });
+    }
+
     try {
-      // 直接处理请求，不进行密码验证
-      return handleAuthenticatedRequest(request, env, path, method);
+      const response = await handleAuthenticatedRequest(request, env, path, method);
+      // 为 API 响应添加 CORS 头部
+      if (path.startsWith('/api/')) { // 仅对 /api/ 路径下的请求添加 CORS 头部
+        const newHeaders = new Headers(response.headers);
+        for (const header in CORS_HEADERS) {
+          newHeaders.set(header, CORS_HEADERS[header as keyof typeof CORS_HEADERS]);
+        }
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: newHeaders
+        });
+      }
+      return response; // 对于非 API 请求（如静态文件），直接返回
     } catch (error: any) {
       console.error('Worker Request Handling Error:', error);
+      const errorHeaders = new Headers({ 'Content-Type': 'application/json' });
+      for (const header in CORS_HEADERS) {
+        errorHeaders.set(header, CORS_HEADERS[header as keyof typeof CORS_HEADERS]);
+      }
       return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: errorHeaders,
         status: 500
       });
     }
