@@ -5,24 +5,27 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 主题切换功能
     const themeToggle = document.getElementById('themeToggle');
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    
-    // 应用保存的主题
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        themeToggle.checked = true;
-    }
-    
-    // 主题切换事件
-    themeToggle.addEventListener('change', () => {
-        if (themeToggle.checked) {
+    // 检查元素是否存在再操作
+    if (themeToggle) {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        
+        // 应用保存的主题
+        if (savedTheme === 'dark') {
             document.body.classList.add('dark-theme');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.body.classList.remove('dark-theme');
-            localStorage.setItem('theme', 'light');
+            themeToggle.checked = true;
         }
-    });
+        
+        // 主题切换事件
+        themeToggle.addEventListener('change', () => {
+            if (themeToggle.checked) {
+                document.body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-theme');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    }
     
     // 原有代码保持不变，下面是原始代码
     const uploadForm = document.getElementById('uploadForm');
@@ -255,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const tagsToUpload = uploadTagsInput.value.trim();
         if (tagsToUpload) {
-            formData.append('tags', tagsToUpload); // 添加标签到 FormData
+            formData.append('tags', tagsToUpload);
         }
 
         uploadResult.innerHTML = '<p>正在上传...</p>';
@@ -266,23 +269,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            const result = await response.json();
+            // 修复点：处理非JSON响应
+            let result;
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                // 如果JSON解析失败，获取原始文本
+                const text = await response.text();
+                throw new Error(`服务器返回非JSON响应: ${text}`);
+            }
 
             if (response.ok) {
                 uploadResult.innerHTML = `
                     <p style="color: green;">上传成功！</p>
                     <p>Public ID: ${result.public_id}</p>
                     <p>Secure URL: <a href="${result.secure_url}" target="_blank">${result.secure_url}</a></p>
-                `; // 简化显示，只显示 Public ID 和 URL
-                fetchAndDisplayImages(currentFolder); // 上传成功后刷新当前文件夹的画廊
+                `;
+                fetchAndDisplayImages(currentFolder);
             } else {
-                uploadResult.innerHTML = `<p style="color: red;">上传失败: ${result.error || '未知错误'}</p>`;
+                // 修复点：显示更详细的错误信息
+                const errorMsg = result.error || `HTTP错误: ${response.status} ${response.statusText}`;
+                uploadResult.innerHTML = `<p style="color: red;">上传失败: ${errorMsg}</p>`;
                 console.error('上传失败详情:', result);
             }
 
         } catch (error) {
-            uploadResult.innerHTML = `<p style="color: red;">上传过程中发生错误: ${error.message}</p>`;
-            console.error('上传错误:', error);
+            // 修复点：显示更友好的错误信息
+            let errorMessage = error.message;
+            if (errorMessage.includes('Unsupported')) {
+                errorMessage = '服务器不支持此文件类型或请求格式';
+            }
+            
+            uploadResult.innerHTML = `<p style="color: red;">上传错误: ${errorMessage}</p>`;
+            console.error('上传错误详情:', error);
         }
     });
 
