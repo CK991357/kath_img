@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadResult.innerHTML = '<p>正在上传...</p>';
 
         try {
-            const response = await fetch('/upload', {
+            const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData
             });
@@ -684,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const imageUrl = transformedImage.src;
 
         try {
-            const response = await fetch('/save-transformed-image', {
+            const response = await fetch('/api/save-transformed-image', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
