@@ -2,9 +2,29 @@
  * 前端脚本：处理图片上传和查询的交互
  */
 
-const API_BASE_URL = 'https://picworker.10110531.xyz'; // 后端 API 基础地址
-
 document.addEventListener('DOMContentLoaded', () => {
+    // 主题切换功能
+    const themeToggle = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    
+    // 应用保存的主题
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        themeToggle.checked = true;
+    }
+    
+    // 主题切换事件
+    themeToggle.addEventListener('change', () => {
+        if (themeToggle.checked) {
+            document.body.classList.add('dark-theme');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.body.classList.remove('dark-theme');
+            localStorage.setItem('theme', 'light');
+        }
+    });
+    
+    // 原有代码保持不变，下面是原始代码
     const uploadForm = document.getElementById('uploadForm');
     const imageFile = document.getElementById('imageFile');
     const uploadResult = document.getElementById('uploadResult');
@@ -170,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tag) {
                 url += `&tag=${encodeURIComponent(tag)}`;
             }
-            const response = await fetch(`${API_BASE_URL}${url}`);
+            const response = await fetch(url);
             const images = await response.json();
 
             if (response.ok) {
@@ -241,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadResult.innerHTML = '<p>正在上传...</p>';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/upload`, {
+            const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData
             });
@@ -291,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 transformations: JSON.stringify(transformations) // 将转换对象转换为JSON字符串
             }).toString();
 
-            const response = await fetch(`${API_BASE_URL}/api/transform?${queryString}`);
+            const response = await fetch(`/api/transform?${queryString}`);
             const result = await response.json();
 
             if (response.ok) {
@@ -645,7 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const imageUrl = transformedImage.src;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/save-transformed-image`, {
+            const response = await fetch('/save-transformed-image', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -687,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/delete-image?public_id=${encodeURIComponent(selectedPublicId)}`, {
+            const response = await fetch(`/api/delete-image?public_id=${encodeURIComponent(selectedPublicId)}`, {
                 method: 'DELETE'
             });
 
