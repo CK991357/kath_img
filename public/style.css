@@ -750,7 +750,6 @@ button:disabled {
     height: 100%; /* 全屏 */
     overflow: auto; /* 允许滚动 */
     background-color: rgba(0, 0, 0, 0.7); /* 半透明黑色背景 */
-    display: flex; /* 使用 flex 布局居中内容 */
     justify-content: center;
     align-items: center;
     padding: 20px; /* 内边距，防止内容紧贴边缘 */
