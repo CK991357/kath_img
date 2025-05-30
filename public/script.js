@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // const overlayFontSelect = document.getElementById('overlayFontSelect');
     // const overlayFontSizeInput = document.getElementById('overlayFontSizeInput');
     // const overlayFontColorInput = document.getElementById('overlayFontColorInput');
-    // const overlayGravitySelect = document.getElementById('overlayGravitySelect');
+    // const overlayGravitySelect = document.getElementById('overlayTextInput');
     // const overlayOffsetXInput = document.getElementById('overlayOffsetXInput');
     // const overlayOffsetYInput = document.getElementById('overlayOffsetYInput');
     // const applyTextOverlayButton = document.getElementById('applyTextOverlayButton');
@@ -108,6 +108,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchTagInput = document.getElementById('searchTagInput'); // 获取标签搜索输入框
     const searchByTagButton = document.getElementById('searchByTagButton'); // 获取按标签搜索按钮
     const clearTagSearchButton = document.getElementById('clearTagSearchButton'); // 获取清除标签搜索按钮
+
+    // 新增的模态框DOM元素
+    const imagePreviewModal = document.getElementById('imagePreviewModal');
+    const closeModalButton = imagePreviewModal.querySelector('.close-button');
+    const modalImage = document.getElementById('modalImage');
+    const modalPublicId = document.getElementById('modalPublicId');
+    const modalImageUrl = document.getElementById('modalImageUrl');
+    const copyButtons = imagePreviewModal.querySelectorAll('.copy-button');
+    const openLinkButtons = imagePreviewModal.querySelectorAll('.open-link-button');
 
     let selectedPublicId = null; // 用于存储当前选中的图片 public_id
     let originalImageUrl = null; // 用于存储当前选中图片的原图 URL
@@ -161,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         delete currentTransformations['e_blur_faces'];
         delete currentTransformations['e_pixelate_faces'];
 
-        // 重置文本叠加 (已删除)
+        // 重置文本叠加 (已删除) - 保持原有注释，不删除代码
         // overlayTextInput.value = '';
         // overlayFontSelect.value = 'arial';
         // overlayFontSizeInput.value = '30';
@@ -169,8 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // overlayGravitySelect.value = 'north_west';
         // overlayOffsetXInput.value = '0';
         // overlayOffsetYInput.value = '0';
-        // 确保文本叠加效果也被清除
-        delete currentTransformations['l']; // 键名已改为 'l'
+        // delete currentTransformations['l']; // 键名已改为 'l'
 
         currentTransformations = {}; // 清空所有转换
         transformedImage.src = originalImageUrl; // 显示原图
@@ -214,17 +222,24 @@ document.addEventListener('DOMContentLoaded', () => {
                             selectedPublicId = image.public_id;
                             originalImageUrl = image.secure_url;
 
-                            // 显示在图片编辑区域
+                            // 显示在图片编辑区域 (原有逻辑)
                             originalImage.src = originalImageUrl;
                             originalImage.classList.remove('hidden');
                             resetAllControls(); // 选择新图片时重置所有效果
 
-                            // 显示在图片详情区域
+                            // 显示在图片详情区域 (原有逻辑)
                             detailImage.src = originalImageUrl;
                             detailImage.classList.remove('hidden');
                             detailPublicId.textContent = selectedPublicId;
                             detailImageUrl.href = originalImageUrl; // 设置链接的 href
                             detailImageUrl.textContent = originalImageUrl; // 设置链接的文本
+
+                            // 新增：显示在模态框中
+                            modalImage.src = originalImageUrl;
+                            modalPublicId.textContent = selectedPublicId;
+                            modalImageUrl.href = originalImageUrl;
+                            modalImageUrl.textContent = originalImageUrl;
+                            imagePreviewModal.style.display = 'flex'; // 显示模态框
                         });
                         imageGallery.appendChild(imgElement);
                     });
@@ -792,6 +807,69 @@ document.addEventListener('DOMContentLoaded', () => {
     clearTagSearchButton.addEventListener('click', () => {
         searchTagInput.value = ''; // 清空标签输入框
         fetchAndDisplayImages(''); // 重新加载所有图片（不带文件夹和标签过滤）
+    });
+
+    /**
+     * 关闭模态框
+     * @returns {void}
+     */
+    function closeModal() {
+        imagePreviewModal.style.display = 'none';
+    }
+
+    // 模态框关闭按钮事件
+    closeModalButton.addEventListener('click', closeModal);
+
+    // 点击模态框外部关闭
+    window.addEventListener('click', (event) => {
+        if (event.target === imagePreviewModal) {
+            closeModal();
+        }
+    });
+
+    /**
+     * 复制文本到剪贴板
+     * @param {string} text - 要复制的文本
+     * @returns {void}
+     */
+    async function copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            alert('已复制到剪贴板！');
+        } catch (err) {
+            console.error('复制失败:', err);
+            alert('复制失败，请手动复制。');
+        }
+    }
+
+    // 复制按钮事件监听器
+    copyButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+            const targetId = event.currentTarget.dataset.target;
+            let textToCopy = '';
+            if (targetId === 'modalPublicId') {
+                textToCopy = modalPublicId.textContent;
+            } else if (targetId === 'modalImageUrl') {
+                textToCopy = modalImageUrl.href;
+            }
+            if (textToCopy) {
+                copyToClipboard(textToCopy);
+            }
+        });
+    });
+
+    // 打开链接按钮事件监听器
+    openLinkButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+            const targetId = event.currentTarget.dataset.target;
+            let urlToOpen = '';
+            if (targetId === 'modalImageUrl') {
+                urlToOpen = modalImageUrl.href;
+            }
+            if (urlToOpen) {
+                window.open(urlToOpen, '_blank');
+            }
+        });
     });
 
     // 页面加载时获取并显示图片
