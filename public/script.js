@@ -111,12 +111,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 新增的模态框DOM元素
     const imagePreviewModal = document.getElementById('imagePreviewModal');
-    const closeModalButton = imagePreviewModal.querySelector('.close-button');
+    const closeModalButton = imagePreviewModal.querySelector('.close-button'); // Legacy close button
     const modalImage = document.getElementById('modalImage');
     const modalPublicId = document.getElementById('modalPublicId');
     const modalImageUrl = document.getElementById('modalImageUrl');
     const copyButtons = imagePreviewModal.querySelectorAll('.copy-button');
     const openLinkButtons = imagePreviewModal.querySelectorAll('.open-link-button');
+
+    // 新增的模态框按钮
+    const modalDeleteButton = document.getElementById('modalDeleteButton');
+    const modalDownloadButton = document.getElementById('modalDownloadButton');
+    const modalCloseButton = document.getElementById('modalCloseButton');
 
     let selectedPublicId = null; // 用于存储当前选中的图片 public_id
     let originalImageUrl = null; // 用于存储当前选中图片的原图 URL
@@ -258,65 +263,83 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadForm.addEventListener('submit', async (event) => {
         event.preventDefault(); // 阻止表单默认提交
 
-        const file = imageFile.files[0];
-        if (!file) {
-            uploadResult.innerHTML = '<p style="color: red;">请选择一个图片文件。</p>';
+        const files = imageFile.files;
+        if (!files || files.length === 0) {
+            uploadResult.innerHTML = '<p style="color: red;">请至少选择一个图片文件。</p>';
             return;
         }
 
-        const formData = new FormData();
-        formData.append('image', file);
         const folderToUpload = uploadFolderInput.value.trim();
-        if (folderToUpload) {
-            formData.append('folder', folderToUpload);
-        }
-
         const tagsToUpload = uploadTagsInput.value.trim();
-        if (tagsToUpload) {
-            formData.append('tags', tagsToUpload);
+        
+        uploadResult.innerHTML = `<p>开始上传 ${files.length} 个文件...</p>`;
+        
+        let successCount = 0;
+        let errorCount = 0;
+        const resultsContainer = document.createElement('div');
+        uploadResult.appendChild(resultsContainer);
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileResultDiv = document.createElement('div');
+            fileResultDiv.innerHTML = `<p>正在上传: ${file.name}...</p>`;
+            resultsContainer.appendChild(fileResultDiv);
+
+            const formData = new FormData();
+            formData.append('image', file);
+            if (folderToUpload) {
+                formData.append('folder', folderToUpload);
+            }
+            if (tagsToUpload) {
+                formData.append('tags', tagsToUpload);
+            }
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    const text = await response.text();
+                    throw new Error(`服务器返回非JSON响应: ${text}`);
+                }
+
+                if (response.ok) {
+                    fileResultDiv.innerHTML = `
+                        <p style="color: green;">✅ ${file.name} - 上传成功!</p>
+                        <p style="font-size: 0.8em;">Public ID: ${result.public_id}</p>
+                    `;
+                    successCount++;
+                } else {
+                    const errorMsg = result.error || `HTTP错误: ${response.status} ${response.statusText}`;
+                    fileResultDiv.innerHTML = `<p style="color: red;">❌ ${file.name} - 上传失败: ${errorMsg}</p>`;
+                    errorCount++;
+                    console.error(`上传失败详情 (${file.name}):`, result);
+                }
+
+            } catch (error) {
+                let errorMessage = error.message;
+                if (errorMessage.includes('Unsupported')) {
+                    errorMessage = '服务器不支持此文件类型或请求格式';
+                }
+                fileResultDiv.innerHTML = `<p style="color: red;">❌ ${file.name} - 上传错误: ${errorMessage}</p>`;
+                errorCount++;
+                console.error(`上传错误详情 (${file.name}):`, error);
+            }
         }
 
-        uploadResult.innerHTML = '<p>正在上传...</p>';
+        // 所有文件处理完毕后，更新最终状态
+        const summaryDiv = document.createElement('p');
+        summaryDiv.innerHTML = `---<br><b>上传完成:</b> ${successCount} 个成功, ${errorCount} 个失败。`;
+        uploadResult.appendChild(summaryDiv);
 
-        try {
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            // 修复点：处理非JSON响应
-            let result;
-            try {
-                result = await response.json();
-            } catch (jsonError) {
-                // 如果JSON解析失败，获取原始文本
-                const text = await response.text();
-                throw new Error(`服务器返回非JSON响应: ${text}`);
-            }
-
-            if (response.ok) {
-                uploadResult.innerHTML = `
-                    <p style="color: green;">上传成功！</p>
-                    <p>Public ID: ${result.public_id}</p>
-                    <p>Secure URL: <a href="${result.secure_url}" target="_blank">${result.secure_url}</a></p>
-                `;
-                fetchAndDisplayImages(currentFolder);
-            } else {
-                // 修复点：显示更详细的错误信息
-                const errorMsg = result.error || `HTTP错误: ${response.status} ${response.statusText}`;
-                uploadResult.innerHTML = `<p style="color: red;">上传失败: ${errorMsg}</p>`;
-                console.error('上传失败详情:', result);
-            }
-
-        } catch (error) {
-            // 修复点：显示更友好的错误信息
-            let errorMessage = error.message;
-            if (errorMessage.includes('Unsupported')) {
-                errorMessage = '服务器不支持此文件类型或请求格式';
-            }
-            
-            uploadResult.innerHTML = `<p style="color: red;">上传错误: ${errorMessage}</p>`;
-            console.error('上传错误详情:', error);
+        // 刷新图片库
+        if (successCount > 0) {
+            fetchAndDisplayImages(currentFolder);
         }
     });
 
@@ -817,8 +840,9 @@ document.addEventListener('DOMContentLoaded', () => {
         imagePreviewModal.style.display = 'none';
     }
 
-    // 模态框关闭按钮事件
-    closeModalButton.addEventListener('click', closeModal);
+    // 模态框关闭按钮事件 (兼容旧版和新版)
+    if(closeModalButton) closeModalButton.addEventListener('click', closeModal);
+    modalCloseButton.addEventListener('click', closeModal);
 
     // 点击模态框外部关闭
     window.addEventListener('click', (event) => {
@@ -870,6 +894,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.open(urlToOpen, '_blank');
             }
         });
+    });
+
+    /**
+     * 下载图片
+     * @param {string} url - 图片的 URL
+     * @param {string} filename - 下载后的文件名
+     * @returns {Promise<void>}
+     */
+    async function downloadImage(url, filename) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`下载图片失败: ${response.statusText}`);
+            }
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename || 'downloaded-image';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        } catch (error) {
+            console.error('下载错误:', error);
+            alert(`下载图片时出错: ${error.message}`);
+        }
+    }
+
+    // 新增的模态框按钮事件监听器
+    modalDeleteButton.addEventListener('click', () => {
+        closeModal(); // 先关闭模态框
+        deleteSelectedImage(); // 然后执行删除
+    });
+
+    modalDownloadButton.addEventListener('click', () => {
+        if (originalImageUrl && selectedPublicId) {
+            downloadImage(originalImageUrl, selectedPublicId);
+        } else {
+            alert('没有可下载的图片。');
+        }
     });
 
     // 页面加载时获取并显示图片
