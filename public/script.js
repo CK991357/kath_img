@@ -259,9 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 处理图片上传表单提交
+    // 处理图片上传表单提交 (修复版)
     uploadForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // 阻止表单默认提交
+        event.preventDefault();
 
         const files = imageFile.files;
         if (!files || files.length === 0) {
@@ -272,27 +272,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const folderToUpload = uploadFolderInput.value.trim();
         const tagsToUpload = uploadTagsInput.value.trim();
         
-        uploadResult.innerHTML = `<p>开始上传 ${files.length} 个文件...</p>`;
-        
-        let successCount = 0;
-        let errorCount = 0;
-        const resultsContainer = document.createElement('div');
-        uploadResult.appendChild(resultsContainer);
+        uploadResult.innerHTML = `<h4>批量上传状态</h4>`;
+        const resultsList = document.createElement('ul');
+        resultsList.style.listStyleType = 'none';
+        resultsList.style.paddingLeft = '0';
+        uploadResult.appendChild(resultsList);
 
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const fileResultDiv = document.createElement('div');
-            fileResultDiv.innerHTML = `<p>正在上传: ${file.name}...</p>`;
-            resultsContainer.appendChild(fileResultDiv);
+        const uploadPromises = Array.from(files).map(async (file) => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<span>正在上传: ${file.name}...</span>`;
+            resultsList.appendChild(listItem);
 
             const formData = new FormData();
             formData.append('image', file);
-            if (folderToUpload) {
-                formData.append('folder', folderToUpload);
-            }
-            if (tagsToUpload) {
-                formData.append('tags', tagsToUpload);
-            }
+            if (folderToUpload) formData.append('folder', folderToUpload);
+            if (tagsToUpload) formData.append('tags', tagsToUpload);
 
             try {
                 const response = await fetch('/api/upload', {
@@ -300,44 +294,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: formData
                 });
 
-                let result;
-                try {
-                    result = await response.json();
-                } catch (jsonError) {
-                    const text = await response.text();
-                    throw new Error(`服务器返回非JSON响应: ${text}`);
-                }
+                const result = await response.json();
 
                 if (response.ok) {
-                    fileResultDiv.innerHTML = `
-                        <p style="color: green;">✅ ${file.name} - 上传成功!</p>
-                        <p style="font-size: 0.8em;">Public ID: ${result.public_id}</p>
-                    `;
-                    successCount++;
+                    listItem.innerHTML = `<span style="color: green;">✔️ ${file.name} - 上传成功</span>`;
+                    return { status: 'fulfilled', file: file.name };
                 } else {
-                    const errorMsg = result.error || `HTTP错误: ${response.status} ${response.statusText}`;
-                    fileResultDiv.innerHTML = `<p style="color: red;">❌ ${file.name} - 上传失败: ${errorMsg}</p>`;
-                    errorCount++;
-                    console.error(`上传失败详情 (${file.name}):`, result);
+                    const errorMsg = result.error || `HTTP ${response.status}`;
+                    listItem.innerHTML = `<span style="color: red;">❌ ${file.name} - 上传失败: ${errorMsg}</span>`;
+                    return { status: 'rejected', file: file.name, reason: errorMsg };
                 }
-
             } catch (error) {
-                let errorMessage = error.message;
-                if (errorMessage.includes('Unsupported')) {
-                    errorMessage = '服务器不支持此文件类型或请求格式';
-                }
-                fileResultDiv.innerHTML = `<p style="color: red;">❌ ${file.name} - 上传错误: ${errorMessage}</p>`;
-                errorCount++;
-                console.error(`上传错误详情 (${file.name}):`, error);
+                listItem.innerHTML = `<span style="color: red;">❌ ${file.name} - 上传出错: ${error.message}</span>`;
+                return { status: 'rejected', file: file.name, reason: error.message };
             }
-        }
+        });
 
-        // 所有文件处理完毕后，更新最终状态
-        const summaryDiv = document.createElement('p');
-        summaryDiv.innerHTML = `---<br><b>上传完成:</b> ${successCount} 个成功, ${errorCount} 个失败。`;
-        uploadResult.appendChild(summaryDiv);
+        const results = await Promise.allSettled(uploadPromises);
+        
+        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        const errorCount = results.length - successCount;
 
-        // 刷新图片库
+        const summary = document.createElement('p');
+        summary.innerHTML = `<b>总计: ${successCount}/${results.length} 个文件上传成功。</b>`;
+        uploadResult.appendChild(summary);
+
         if (successCount > 0) {
             fetchAndDisplayImages(currentFolder);
         }
@@ -840,9 +821,9 @@ document.addEventListener('DOMContentLoaded', () => {
         imagePreviewModal.style.display = 'none';
     }
 
-    // 模态框关闭按钮事件 (兼容旧版和新版)
-    if(closeModalButton) closeModalButton.addEventListener('click', closeModal);
-    modalCloseButton.addEventListener('click', closeModal);
+    // 模态框关闭按钮事件
+    if(closeModalButton) closeModalButton.addEventListener('click', closeModal); // 兼容旧版
+    if(modalCloseButton) modalCloseButton.addEventListener('click', closeModal);
 
     // 点击模态框外部关闭
     window.addEventListener('click', (event) => {
@@ -922,19 +903,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 新增的模态框按钮事件监听器
-    modalDeleteButton.addEventListener('click', () => {
-        closeModal(); // 先关闭模态框
-        deleteSelectedImage(); // 然后执行删除
-    });
+    // 新增的模态框按钮事件监听器 (修复版)
+    if (modalDeleteButton) {
+        modalDeleteButton.addEventListener('click', () => {
+            if (!selectedPublicId) {
+                alert('没有选中的图片可删除。');
+                return;
+            }
+            closeModal();
+            deleteSelectedImage();
+        });
+    }
 
-    modalDownloadButton.addEventListener('click', () => {
-        if (originalImageUrl && selectedPublicId) {
-            downloadImage(originalImageUrl, selectedPublicId);
-        } else {
-            alert('没有可下载的图片。');
-        }
-    });
+    if (modalDownloadButton) {
+        modalDownloadButton.addEventListener('click', () => {
+            if (originalImageUrl && selectedPublicId) {
+                // 从 URL 中提取文件名和扩展名
+                const urlParts = originalImageUrl.split('/');
+                const fileNameWithVersion = urlParts[urlParts.length - 1];
+                const publicIdParts = selectedPublicId.split('/');
+                const originalFileName = publicIdParts[publicIdParts.length - 1];
+                const extension = fileNameWithVersion.split('.').pop();
+                
+                downloadImage(originalImageUrl, `${originalFileName}.${extension}`);
+            } else {
+                alert('没有可下载的图片。');
+            }
+        });
+    }
 
     // 页面加载时获取并显示图片
     fetchAndDisplayImages(); // 默认加载所有上传图片
